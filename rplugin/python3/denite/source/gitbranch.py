@@ -47,14 +47,15 @@ class Source(BaseSource):
         self.kind = Kind(vim)
 
     def on_init(self, context):
-        gitdir = self.vim.call('denite#git#gitdir')
-        context['__root'] = '' if not gitdir else os.path.dirname(gitdir)
+        cwd = self.vim.eval('getcwd()')
+        context['__root'] = cwd
 
     def gather_candidates(self, context):
         root = context['__root']
         if not root:
             return []
-        args = ['git', 'branch', '--no-color', '-a']
+        args = ['git', 'branch', '--no-color']
+        # args = ['git', 'branch', '--no-color', '-a']
         self.print_message(context, ' '.join(args))
         lines = run_command(args, root)
         candidates = []
@@ -82,7 +83,6 @@ class Kind(BaseKind):
         args = ['git', 'checkout', branch]
         root = target['source__root']
         run_command(args, root)
-        self.vim.command('bufdo e')
 
     def action_delete(self, context):
         target = context['targets'][0]
