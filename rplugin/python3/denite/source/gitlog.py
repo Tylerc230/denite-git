@@ -52,9 +52,10 @@ class Source(Base):
         if not gitdir:
             return
 
+        cwd = self.vim.eval('getcwd()')
         is_all = str(args.get(0, [])) == 'all'
         context['pattern'] = context['input'] if context['input'] else str(args.get(1, ''))
-        context['__root'] = os.path.dirname(gitdir)
+        context['__root'] = cwd if is_all else os.path.dirname(gitdir)
         context['__winid'] = self.vim.call('win_getid')
         buftype = self.vim.current.buffer.options['buftype']
         fullpath = os.path.normpath(self.vim.call('expand', '%:p'))
