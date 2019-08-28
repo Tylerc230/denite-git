@@ -26,16 +26,18 @@ def _parse_line(line, root):
     }
 
 
-def run_command(commands, cwd, encoding='utf-8'):
+def run_command(commands, cwd, vim, encoding='utf-8'):
     try:
         p = subprocess.run(commands,
                            cwd=cwd,
                            stdout=subprocess.PIPE,
-                           stderr=subprocess.STDOUT)
+                           stderr=subprocess.PIPE)
     except subprocess.CalledProcessError:
         return []
 
+    vim.command("echom '{}'".format(p.stderr.decode(encoding)))
     return p.stdout.decode(encoding).split('\n')
+    # return p.stderr.decode(encoding).split('\n')
 
 
 class Source(BaseSource):
@@ -54,10 +56,9 @@ class Source(BaseSource):
         root = context['__root']
         if not root:
             return []
-        args = ['git', 'branch', '--no-color']
-        # args = ['git', 'branch', '--no-color', '-a']
+        args = ['git', 'branch', '--quiet', '--no-color', '--sort=-committerdate']#recently committed first
         self.print_message(context, ' '.join(args))
-        lines = run_command(args, root)
+        lines = run_command(args, root, self.vim)
         candidates = []
 
         for line in lines:
@@ -80,9 +81,9 @@ class Kind(BaseKind):
     def action_checkout(self, context):
         target = context['targets'][0]
         branch = target['source__branch']
-        args = ['git', 'checkout', branch]
+        args = ['git', 'checkout', '--quiet', branch]
         root = target['source__root']
-        run_command(args, root)
+        run_command(args, root, self.vim)
 
     def action_delete(self, context):
         target = context['targets'][0]
@@ -103,7 +104,7 @@ class Kind(BaseKind):
             args = ['git', 'branch', '-D' if force else '-d', branch]
 
         if len(args) > 0:
-            run_command(args, root)
+            run_command(args, root, self.vim)
             self.vim.command('bufdo e')
 
     def action_merge(self, context):
@@ -113,7 +114,7 @@ class Kind(BaseKind):
         args = ['git', 'merge', branch]
 
         if not target['source__current']:
-            run_command(args, root)
+            run_command(args, root, self.vim)
             self.vim.command('bufdo e')
 
     def action_rebase(self, context):
@@ -123,6 +124,6 @@ class Kind(BaseKind):
         root = target['source__root']
 
         if not target['source__current']:
-            run_command(args, root)
+            run_command(args, root, self.vim)
             self.vim.command('bufdo e')
 
